@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>스마트 미러</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Pretendard', sans-serif;
+        }
+
+        body {
+            background: #0f172a;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .video-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        #videoElement {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scale(-1, 1);
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                rgba(15, 23, 42, 0.4) 0%,
+                rgba(15, 23, 42, 0.8) 100%
+            );
+            z-index: 2;
+        }
+
+        .interface {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 3;
+            padding: 2rem;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            gap: 2rem;
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .glass-effect:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(-5px);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-group {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem 1.5rem;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            background: #22c55e;
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.6);
+            animation: pulse 2s infinite;
+        }
+
+        .status-text {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .main-content {
+            position: relative;
+            height: 100%;
+        }
+
+        .metrics {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            padding: 2rem;
+            width: 320px;
+        }
+
+        .metric {
+            padding: 1.5rem;
+            opacity: 0;
+            transform: translateX(20px);
+            animation: slideLeft 0.6s ease forwards;
+        }
+
+        .metric-label {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .metric-value {
+            font-size: 3.5rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #818cf8, #4f46e5);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.3));
+        }
+
+        .location-temp {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.8);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .footer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 2rem;
+            padding-bottom: 2rem;
+        }
+
+        .button {
+            background: linear-gradient(135deg, #818cf8, #4f46e5);
+            border: none;
+            border-radius: 1rem;
+            color: white;
+            font-size: 1.125rem;
+            font-weight: 600;
+            padding: 1rem 3rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
+        }
+
+        @keyframes slideLeft {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .metrics {
+                width: 100%;
+                position: static;
+                transform: none;
+                padding: 1rem;
+            }
+
+            .metric-value {
+                font-size: 2.5rem;
+            }
+
+            .glass-effect:hover {
+                transform: translateY(-2px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 비디오 스트림 영역 -->
+        <div class="video-container">
+            <video id="videoElement" autoplay playsinline></video>
+        </div>
+        <div class="overlay"></div>
+        <div class="interface">
+            <header class="header">
+                <div class="status-group glass-effect">
+                    <div class="status-indicator"></div>
+                    <span class="status-text">시스템 정상 작동중</span>
+                </div>
+            </header>
+            <main class="main-content">
+                <div class="metrics">
+                    <!-- 피부톤 -->
+                    <div class="metric glass-effect" style="animation-delay: 0.1s;">
+                        <div class="metric-label">
+                            <span>피부톤 분석</span>
+                        </div>
+                        <div class="metric-value">{{ tone }}</div>
+                    </div>
+                    <!-- 온도 -->
+                    <div class="metric glass-effect" style="animation-delay: 0.2s;">
+                        <div class="metric-label">
+                            <span>온도</span>
+                        </div>
+                        <div class="metric-value">{{ temperature }}°</div>
+                        <div class="location-temp">
+                            <span>{{ location }}</span>
+                        </div>
+                    </div>
+                    <!-- 날씨 -->
+                    <div class="metric glass-effect" style="animation-delay: 0.3s;">
+                        <div class="metric-label">
+                            <span>날씨</span>
+                        </div>
+                        <div class="metric-value">{{ wether }}</div>
+                    </div>
+                </div>
+            </main>
+            <footer class="footer">
+                <button class="button glass-effect" onclick="startDetection()">분석 시작</button>
+                <button class="button glass-effect" onclick="refreshWeather()">날씨 새로고침</button>
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        // 웹캠 접근 및 시작
+        async function startWebcam() {
+            const video = document.getElementById('videoElement');
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: { ideal: 1920 }, height: { ideal: 1080 } }
+                });
+                video.srcObject = stream;
+            } catch (err) {
+                console.error('웹캠 접근 오류:', err);
+                alert('웹캠을 사용할 수 없습니다. 권한을 확인해주세요.');
+            }
+        }
+
+        // 분석 시작
+        function startDetection() {
+            fetch('/detect')
+                .then(response => {
+                    if (response.ok) {
+                        location.reload();
+                    } else {
+                        console.error('분석 시작 실패');
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // 날씨 새로고침
+        function refreshWeather() {
+            fetch('/refresh_weather')
+                .then(response => {
+                    if (response.ok) {
+                        location.reload();
+                    } else {
+                        console.error('날씨 새로고침 실패');
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // 페이지 로드 시 웹캠 시작
+        window.addEventListener('load', startWebcam);
+    </script>
+</body>
+</html>
